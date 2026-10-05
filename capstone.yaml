@@ -1,0 +1,62 @@
+# MeterFlow Capstone Submission Manifest
+project: MeterFlow
+description: Usage Metering & Billing Engine with idempotent metering, quota enforcement, precise token pricing, and Stripe test-mode integration.
+author: Akash Kodihithlu
+repository: https://github.com/AkashKodihithlu/MeterFlow.git
+
+run: npm start
+seed: npm run seed
+test: npm test
+base_url: http://localhost:3000
+
+endpoints:
+  health:
+    method: GET
+    path: /health
+    description: Healthcheck endpoint for service availability.
+
+  meter_generation:
+    method: POST
+    path: /api/v1/generate
+    description: Billable generation endpoint with idempotency and quota gating.
+    headers:
+      Content-Type: application/json
+      Idempotency-Key: "<uuid-or-unique-string>"
+    sample_payload:
+      tenant_id: "tenant_default_free"
+      model: "gpt-4o"
+      input_tokens: 1200
+      cached_input_tokens: 300
+      output_tokens: 450
+      reasoning_tokens: 150
+      api_calls: 1
+
+  usage_rollup:
+    method: GET
+    path: /api/v1/usage?tenant_id=tenant_default_free
+    description: Returns aggregated usage, remaining quota, and itemized cost breakdown for the tenant.
+
+  checkout_session:
+    method: POST
+    path: /api/v1/checkout/create-session
+    description: Creates a Stripe test-mode checkout session for Pro plan upgrade.
+    sample_payload:
+      tenant_id: "tenant_stripe_upgrade"
+
+  stripe_webhook:
+    method: POST
+    path: /webhooks/stripe
+    description: Signature-verified, idempotent Stripe webhook receiver.
+    headers:
+      Content-Type: application/json
+      stripe-signature: "t=<timestamp>,v1=<signature>"
+
+  invoice:
+    method: GET
+    path: /api/v1/tenants/tenant_default_free/invoice
+    description: Formatted monthly invoice statement with itemized usage lines.
+
+  worker_trigger:
+    method: POST
+    path: /api/v1/worker/trigger
+    description: Manual execution trigger for background rollups, quota alerts, and reconciliation.
